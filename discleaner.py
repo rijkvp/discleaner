@@ -5,78 +5,57 @@ import datetime
 import asyncio
 
 client_secret = None
+target_ids = None
+is_bot = None
 
 bot = commands.Bot(command_prefix="!")
 
 with open("config.json", "r") as f:
     config_json = json.loads(f.read())
     client_secret = config_json["secret"]
+    target_ids = [int(id) for id in config_json["target_ids"]]
+    is_bot = config_json["is_bot"]
 
-async def delete_messages(channel, before_date):
-    async for msg in channel.history(before=before_date, oldest_first=True):
-        if not msg.pinned:
-            print("<{}> {}".format(msg.created_at.strftime("%Y-%m-%d %H:%M"), msg.content))
+async def delete_messages(channel):
+    time_delta = datetime.timedelta(days=30)
+    before_date = datetime.datetime.now() - time_delta
+    print("Deleting before {}".format(before_date.strftime("%Y-%m-%d %H:%M")))
+
+    message_chain = []
+
+    try:
+        async for msg in channel.history(limit=float('inf'), before=before_date, oldest_first=True):
+            if not msg.pinned:
+                if msg.author.id in target_ids:
+                    print("DIRECT   == <{}> {}: {}".format(msg.created_at.strftime("%Y-%m-%d %H:%M"), msg.author.name, msg.content))
+                    message_chain.append(msg.id)
+                elif target_ids in [m.id for m in msg.mentions]:
+                    print("MENTION   == <{}> {}: {}".format(msg.created_at.strftime("%Y-%m-%d %H:%M"), msg.author.name, msg.content))
+                    message_chain.append(msg.id)
+                elif msg.reference != None and msg.reference.message_id in message_chain:
+                    print("REFCHAIN  == <{}> {}: {}".format(msg.created_at.strftime("%Y-%m-%d %H:%M"), msg.author.name, msg.content))
+                    message_chain.append(msg.id)
+    except:
+        print("Error: no perms probably")
+        return
+    
+    print("\nDeleting {} messages from {}..".format(len(message_chain), channel.name))
+    async for msg in channel.history(limit=float('inf'), before=before_date, oldest_first=True):
+        if msg.id in message_chain:
             try:
                 await msg.delete()
             except:
-                pass
-        else: 
-            print("Keeping pinned " + msg.content)
-
-# Only allow two or three months to prevent deleting recent messages
-def get_time(time_name):
-    if time_name == "3m":
-        return ("three months", datetime.timedelta(days=90))
-    elif time_name == "2m":
-        return ("two months", datetime.timedelta(days=60))
-    else:
-        return (None, None)
-
-@bot.command(name="clean-server")
-async def clean_server(ctx, time_name):
-    try:
-        await ctx.message.delete()
-    except:
-        pass
-
-    time_name, time_delta = get_time(time_name)
-
-    if time_name == None or time_delta == None:
-        await ctx.send("Invalid time argument!", delete_after=10)
-        return
-
-    await ctx.send("Cleaning messages older than {}..".format(time_name), delete_after=10)
-
-    before_date = datetime.datetime.now() - time_delta
-
-    for channel in ctx.guild.text_channels:
-        print("Clean channeling {}".format(channel.name))
-        await delete_messages(channel, before_date)
-    
-    await ctx.send("Old messages have been deleted.", delete_after=10)
-
-@bot.command(name="clean-channel")
-async def clean_channel(ctx, time_name):
-    try:
-        await ctx.message.delete()
-    except:
-        pass
-
-    time_name, time_delta = get_time(time_name)
-
-    if time_name == None or time_delta == None:
-        await ctx.send("Invalid time argument!", delete_after=10)
-        return
-
-    await ctx.send("Cleaning messages older than {}..".format(time_name), delete_after=10)
-
-    before_date = datetime.datetime.now() - time_delta
-    await delete_messages(ctx.message.channel, before_date)
-    
-    await ctx.send("Old messages have been deleted.", delete_after=10)
+                print("Deletion failed.")
 
 @bot.event
 async def on_ready():
-    print('Logged in as: {0.user}'.format(bot))
+    print('Logged in as: {}'.format(bot.user.name))
+    await bot.change_presence(status=discord.Status.invisible)
+    for guild in bot.guilds:
+        print('\n\nGUILD: {}'.format(guild.name))
+        for tc in guild.text_channels:
+            print('\nCHANNEL: {}'.format(tc.name))
+            await delete_messages(tc)
+    print("Done!")
 
-bot.run(client_secret)
+bot.run(client_secret, bot=is_bot)
