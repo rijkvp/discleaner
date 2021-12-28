@@ -35,8 +35,9 @@ async def delete_messages(channel):
                 elif msg.reference != None and msg.reference.message_id in message_chain:
                     print("REFCHAIN  == <{}> {}: {}".format(msg.created_at.strftime("%Y-%m-%d %H:%M"), msg.author.name, msg.content))
                     message_chain.append(msg.id)
-    except:
+    except Exception as e: 
         print("Error: no perms probably")
+        print(e)
         return
     
     print("\nDeleting {} messages from {}..".format(len(message_chain), channel.name))
