@@ -41,7 +41,7 @@ async def delete_messages(channel, only_self):
 
     try:
         async for msg in channel.history(limit=float('inf'), before=before_date, oldest_first=True):
-            if not msg.pinned:
+            if not msg.pinned and msg.type == discord.message.MessageType.default:
                 if only_self:
                     if msg.author.id == client.user.id:
                         log_msg(msg, 'Self')
@@ -63,8 +63,8 @@ async def delete_messages(channel, only_self):
                         log_msg(msg, 'Word')
                         message_chain.append(msg.id)
     except Exception as e:
-        logging.debug(
-            'Error while reading history: no perms probably\n{}'.format(e))
+        logging.error(
+            'Error while reading history: {}'.format(e))
         return 0
 
     logging.debug('\nDeleting {} messages.'.format(
@@ -76,7 +76,7 @@ async def delete_messages(channel, only_self):
             try:
                 await msg.delete()
             except Exception as e:
-                logging.debug('Error: deletion failed.\n{}'.format(e))
+                logging.error('Error: failed to delete {}: "{}".\n{}'.format(msg.author.name, msg.content, e))
     return count
 
 
