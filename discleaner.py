@@ -95,11 +95,11 @@ async def on_ready():
         for pc in client.private_channels:
             channel_name = None
             if pc.type is discord.ChannelType.private:
-                logging.debug(
+                logging.info(
                     'Reading DM channel: {}'.format(pc.recipient.name))
                 channel_name = pc.recipient.name
             elif pc.type is discord.ChannelType.group:
-                logging.debug('Reading DM group channel: {}'.format(pc.name))
+                logging.info('Reading DM group channel: {}'.format(pc.name))
                 channel_name = pc.name
 
             count = await delete_messages(pc, True)
@@ -110,7 +110,7 @@ async def on_ready():
     for guild in client.guilds:
         logging.debug('Reaing guild: {}'.format(guild.name))
         for tc in guild.text_channels:
-            logging.debug('Reading channel: {}'.format(tc.name))
+            logging.info('Reading guild channel: {}'.format(tc.name))
             await delete_messages(tc, target_only_self)
     logging.info('Done! Deleted {} messages in total.'.format(total_count))
     await client.close()
