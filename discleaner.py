@@ -52,7 +52,7 @@ async def delete_messages(channel):
                         print("REFCHAIN  == <{}> {}: {}".format(msg.created_at.strftime(
                             "%Y-%m-%d %H:%M"), msg.author.name, msg.content))
                         message_chain.append(msg.id)
-                    elif target_words in search_str:
+                    elif any(word in search_str for word in target_words):
                         print("WORD  == <{}> {}: {}".format(msg.created_at.strftime(
                             "%Y-%m-%d %H:%M"), msg.author.name, msg.content))
                         message_chain.append(msg.id)
@@ -82,6 +82,6 @@ async def on_ready():
             print('\nCHANNEL: {}'.format(tc.name))
             await delete_messages(tc)
     print("Done!")
-    quit()
+    exit()
 
 client.run(client_secret, bot=is_bot)
