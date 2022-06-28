@@ -8,7 +8,7 @@ import string
 
 DATE_FMT = '%Y-%m-%d %H:%M'
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
-                    datefmt=DATE_FMT, filename='discleaner.log', level=logging.INFO)
+                    datefmt=DATE_FMT, level=logging.INFO)
 
 client_secret = None
 target_ids = None
